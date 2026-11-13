@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#111522">
+    <title>灵墟：一念成仙</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        color: #f5f0dc;
+        background: #10131d;
+        font-synthesis: none;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        padding: 22px;
+        background:
+          radial-gradient(ellipse at 50% 0%, #27203a 0, transparent 52%),
+          linear-gradient(180deg, #151824, #0d1119 72%);
+      }
+
+      button {
+        border: 1px solid #756044;
+        border-radius: 4px;
+        color: #f5e7bd;
+        background: #292a35;
+        font: inherit;
+        cursor: pointer;
+        transition: background 120ms ease, transform 120ms ease, border-color 120ms ease;
+      }
+
+      button:hover:not(:disabled) { border-color: #e2bd6d; background: #3a3541; }
+      button:active:not(:disabled) { transform: translateY(1px); }
+      button:focus-visible { outline: 2px solid #e8c66e; outline-offset: 3px; }
+      button:disabled { cursor: default; opacity: 0.48; }
+
+      .game-shell { width: min(100%, 1120px); margin: 0 auto; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 0 0 14px; }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .seal {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border: 1px solid #dfb75b;
+        color: #f4cb70;
+        background: #34283a;
+        box-shadow: inset 0 0 0 4px #211d2b;
+        font-family: serif;
+        font-size: 24px;
+      }
+
+      h1 { margin: 0; color: #f2cf7d; font-family: serif; font-size: clamp(20px, 3vw, 27px); letter-spacing: 3px; }
+      .subtitle { margin-top: 3px; color: #9399a8; font-size: 12px; letter-spacing: 1px; }
+      #pause-button { min-width: 94px; padding: 9px 14px; font-size: 13px; }
+      .arena { position: relative; overflow: hidden; border: 1px solid #514b55; background: #171d29; box-shadow: 0 18px 55px #0008, 0 0 0 5px #171923; }
+      canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #0c1019bf;
+        backdrop-filter: blur(3px);
+      }
+
+      .overlay[hidden] { display: none; }
+      .panel { width: min(100%, 620px); max-height: 100%; overflow: auto; padding: clamp(20px, 4vw, 36px); border: 1px solid #8a734c; background: linear-gradient(135deg, #282434f5, #171d28f5); box-shadow: 0 12px 50px #0009, inset 0 0 0 5px #ffffff08; text-align: center; }
+      .eyebrow { color: #8bd1bb; font-size: 11px; letter-spacing: 4px; }
+      .panel h2 { margin: 12px 0 10px; color: #f3d48f; font-family: serif; font-size: clamp(25px, 6vw, 38px); letter-spacing: 4px; }
+      .panel p { max-width: 450px; margin: 0 auto 22px; color: #b6b9c3; font-size: 14px; line-height: 1.8; }
+      .primary-button { padding: 12px 28px; border-color: #d3a94f; color: #241d20; background: linear-gradient(180deg, #f3d27f, #d6aa54); font-weight: 700; letter-spacing: 2px; }
+      .primary-button:hover:not(:disabled) { border-color: #ffe6a1; color: #17171b; background: linear-gradient(180deg, #ffe39a, #e4bd6b); }
+      .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+      .choice { min-height: 100px; padding: 14px 10px; border-color: #675b49; background: #272a35; }
+      .choice strong { display: block; margin-bottom: 8px; color: #f0cb78; font-size: 15px; }
+      .choice span { display: block; color: #adb2c0; font-size: 12px; line-height: 1.6; }
+
+      .touch-controls { display: none; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 18px auto 0; touch-action: none; user-select: none; }
+      .control-group { display: grid; justify-items: center; gap: 7px; }
+      .control-label { color: #777e8e; font-size: 10px; letter-spacing: 2px; }
+      .dpad { display: grid; grid-template: repeat(2, 42px) / repeat(3, 48px); gap: 4px; }
+      .dpad button, .aim-pad button, .fire-button { border-color: #4b4d58; color: #e4d7b6; background: #242936d9; font-size: 17px; touch-action: none; }
+      .dpad button[data-dir="up"] { grid-column: 2; grid-row: 1; }
+      .dpad button[data-dir="left"] { grid-column: 1; grid-row: 2; }
+      .dpad button[data-dir="down"] { grid-column: 2; grid-row: 2; }
+      .dpad button[data-dir="right"] { grid-column: 3; grid-row: 2; }
+      .aim-pad { display: grid; grid-template: repeat(3, 34px) / repeat(3, 34px); gap: 3px; }
+      .aim-pad button { font-size: 12px; }
+      .aim-pad button[data-aim="up-left"] { grid-column: 1; grid-row: 1; }
+      .aim-pad button[data-aim="up"] { grid-column: 2; grid-row: 1; }
+      .aim-pad button[data-aim="up-right"] { grid-column: 3; grid-row: 1; }
+      .aim-pad button[data-aim="left"] { grid-column: 1; grid-row: 2; }
+      .aim-pad button[data-aim="right"] { grid-column: 3; grid-row: 2; }
+      .aim-pad button[data-aim="down-left"] { grid-column: 1; grid-row: 3; }
+      .aim-pad button[data-aim="down"] { grid-column: 2; grid-row: 3; }
+      .aim-pad button[data-aim="down-right"] { grid-column: 3; grid-row: 3; }
+      .action-buttons { display: flex; width: 100%; gap: 5px; }
+      .fire-button { flex: 1; height: 42px; border-color: #d3a94f; color: #f3d27f; font-size: 13px; font-weight: 700; }
+      .dodge-button { width: 64px; height: 42px; border-color: #568e80 !important; color: #a9e3cb !important; font-size: 12px !important; }
+      .help { display: flex; justify-content: center; gap: 20px; margin: 13px 0 0; color: #969bab; font-size: 11px; }
+      .help kbd { padding: 2px 6px; border: 1px solid #454752; border-radius: 3px; color: #c8c0aa; background: #1b1d26; font: inherit; }
+
+      @media (pointer: coarse), (max-width: 700px) {
+        body { padding: 14px 12px 24px; }
+        .touch-controls { display: flex; max-width: 430px; }
+        .help { display: none; }
+        .choices { grid-template-columns: 1fr; }
+        .choice { min-height: auto; }
+      }
+
+      @media (max-width: 420px) {
+        .subtitle { display: none; }
+        .seal { width: 36px; height: 36px; font-size: 20px; }
+        .touch-controls { gap: 4px; }
+        .dpad { grid-template: repeat(2, 38px) / repeat(3, 42px); gap: 3px; }
+        .aim-pad { grid-template: repeat(3, 30px) / repeat(3, 30px); gap: 2px; }
+        .dodge-button { width: 58px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="seal" aria-hidden="true">灵</div>
+          <div>
+            <h1>灵墟：一念成仙</h1>
+            <div class="subtitle">ROOM-BASED PIXEL ACTION ROGUELIKE</div>
+          </div>
+        </div>
+        <button id="pause-button" type="button" aria-label="暂停游戏">Ⅱ　暂停</button>
+      </header>
+
+      <section class="arena" aria-label="灵墟房间制动作修仙战场">
+        <canvas id="game" width="960" height="600" aria-label="移动、瞄准并发射法术击败妖物"></canvas>
+        <div id="overlay" class="overlay">
+          <div id="panel" class="panel"></div>
+        </div>
+      </section>
+
+      <div class="touch-controls" aria-label="触屏移动和瞄准操作">
+        <div class="control-group">
+          <span class="control-label">移动</span>
+          <div class="dpad">
+            <button type="button" data-dir="up" aria-label="向上移动">▲</button>
+            <button type="button" data-dir="left" aria-label="向左移动">◀</button>
+            <button type="button" data-dir="down" aria-label="向下移动">▼</button>
+            <button type="button" data-dir="right" aria-label="向右移动">▶</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <span class="control-label">瞄准 · 发射</span>
+          <div class="aim-pad" aria-label="瞄准方向">
+            <button type="button" data-aim="up-left" aria-label="向左上瞄准">↖</button>
+            <button type="button" data-aim="up" aria-label="向上瞄准">↑</button>
+            <button type="button" data-aim="up-right" aria-label="向右上瞄准">↗</button>
+            <button type="button" data-aim="left" aria-label="向左瞄准">←</button>
+            <button type="button" data-aim="right" aria-label="向右瞄准">→</button>
+            <button type="button" data-aim="down-left" aria-label="向左下瞄准">↙</button>
+            <button type="button" data-aim="down" aria-label="向下瞄准">↓</button>
+            <button type="button" data-aim="down-right" aria-label="向右下瞄准">↘</button>
+          </div>
+          <div class="action-buttons">
+            <button id="touch-fire" class="fire-button" type="button">按住发射</button>
+            <button id="touch-dodge" class="dodge-button" type="button" aria-label="闪避">闪避</button>
+          </div>
+        </div>
+      </div>
+      <p class="help"><span><kbd>WASD</kbd> 移动</span><span>鼠标瞄准，按住左键或 <kbd>空格</kbd> 发射</span><span><kbd>Shift</kbd> 闪避</span><span><kbd>ESC</kbd> 暂停</span></p>
+    </main>
+    <script src="game.js"></script>
+  </body>
+</html>
